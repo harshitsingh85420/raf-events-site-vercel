@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html class="dark">
+<head>
+  <meta charset="utf-8">
+  <title>Admin Dashboard - RAF Signature Events</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@3.3.0/dist/tailwind.min.css" rel="stylesheet">
+  <script src="https://unpkg.com/@supabase/supabase-js@2.39.3/dist/supabase.js"></script>
+</head>
+<body class="bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-100">
+  <nav class="flex justify-between items-center p-4">
+    <h1 class="text-2xl font-bold">Admin Dashboard</h1>
+    <button id="toggleTheme" class="px-4 py-2 bg-gray-200 dark:bg-gray-700 rounded">Toggle Theme</button>
+  </nav>
+  <!-- Authentication container -->
+  <div id="auth" class="p-8 max-w-md mx-auto">
+    <h2 class="text-xl font-bold mb-4">Login</h2>
+    <input id="loginEmail" type="email" placeholder="Email" class="w-full mb-2 p-2 border rounded">
+    <input id="loginPassword" type="password" placeholder="Password" class="w-full mb-4 p-2 border rounded">
+    <button id="loginBtn" class="w-full px-4 py-2 bg-blue-600 text-white rounded">Login</button>
+    <p id="loginError" class="text-red-500 mt-2"></p>
+  </div>
+  <!-- Dashboard container -->
+  <div id="dashboard" class="hidden p-8">
+    <h2 class="text-xl font-bold mb-4">Create Event</h2>
+    <input id="title" type="text" placeholder="Title" class="w-full mb-2 p-2 border rounded">
+    <input id="city" type="text" placeholder="City" class="w-full mb-2 p-2 border rounded">
+    <input id="venue" type="text" placeholder="Venue" class="w-full mb-2 p-2 border rounded">
+    <input id="startDate" type="date" class="w-full mb-2 p-2 border rounded">
+    <input id="endDate" type="date" class="w-full mb-2 p-2 border rounded">
+    <textarea id="description" placeholder="Description" class="w-full mb-2 p-2 border rounded"></textarea>
+    <label class="block mb-4">
+      <input id="publish" type="checkbox" class="mr-2"> Publish
+    </label>
+    <button id="createEventBtn" class="w-full px-4 py-2 bg-green-600 text-white rounded">Create Event</button>
+    <p id="eventError" class="text-red-500 mt-2"></p>
+
+    <h2 class="text-xl font-bold mt-8 mb-4">Existing Events</h2>
+    <div id="eventsTable" class="space-y-2"></div>
+  </div>
+  <script>
+    const supabaseUrl = 'https://pojudmrkqruuxklwvkvj.supabase.co';
+    const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBvanVkbXJrcXJ1dXhrbHd2a3ZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYxMTE3ODgsImV4cCI6MjA3MTY4Nzc4OH0.dAwlj7yQm1eMz4weKroUC2t5Y_1N5koEHSpqqoH65G0';
+    const supabase = supabase.createClient(supabaseUrl, supabaseAnonKey);
+
+    // Theme toggle
+    const toggleButton = document.getElementById('toggleTheme');
+    toggleButton.addEventListener('click', () => {
+      document.documentElement.classList.toggle('dark');
+    });
+
+    // Authentication logic
+    const authDiv = document.getElementById('auth');
+    const dashboardDiv = document.getElementById('dashboard');
+    const loginEmail = document.getElementById('loginEmail');
+    const loginPassword = document.getElementById('loginPassword');
+    const loginBtn = document.getElementById('loginBtn');
+    const loginError = document.getElementById('loginError');
+
+    loginBtn.addEventListener('click', async () => {
+      loginError.textContent = '';
+      const email = loginEmail.value;
+      const password = loginPassword.value;
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) {
+        loginError.textContent = error.message;
+      } else {
+        authDiv.classList.add('hidden');
+        dashboardDiv.classList.remove('hidden');
+        fetchEvents();
+      }
+    });
+
+    // Fetch all events (published and drafts)
+    async function fetchEvents() {
+      const { data, error } = await supabase
+        .from('events')
+        .select('*')
+        .order('created_at', { ascending: false });
+      if (error) {
+        console.error('Error fetching events:', error);
+        return;
+      }
+      const container = document.getElementById('eventsTable');
+      container.innerHTML = '';
+      data.forEach(event => {
+        const card = document.createElement('div');
+        card.className = 'bg-white dark:bg-gray-800 shadow rounded p-4';
+        card.innerHTML = `
+          <h3 class="text-lg font-bold mb-1">${event.title}</h3>
+          <p class="text-sm mb-1">${event.city || ''} ${event.city && event.venue ? '–' : ''} ${event.venue || ''}</p>
+          <p class="text-sm mb-1">${event.start_date ? new Date(event.start_date).toLocaleDateString() : ''}</p>
+          <p class="text-sm mb-1">${event.is_published ? 'Published' : 'Draft'}</p>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    // Create event logic
+    const createEventBtn = document.getElementById('createEventBtn');
+    const eventError = document.getElementById('eventError');
+    createEventBtn.addEventListener('click', async () => {
+      eventError.textContent = '';
+      const title = document.getElementById('title').value;
+      const city = document.getElementById('city').value;
+      const venue = document.getElementById('venue').value;
+      const startDate = document.getElementById('startDate').value;
+      const endDate = document.getElementById('endDate').value;
+      const description = document.getElementById('description').value;
+      const publish = document.getElementById('publish').checked;
+      const slug = title.toLowerCase().trim().replace(/\s+/g, '-');
+      const { error } = await supabase
+        .from('events')
+        .insert([
+          {
+            slug,
+            title,
+            city,
+            venue,
+            start_date: startDate ? startDate : null,
+            end_date: endDate ? endDate : null,
+            description,
+            is_published: publish
+          }
+        ]);
+      if (error) {
+        eventError.textContent = error.message;
+      } else {
+        document.getElementById('title').value = '';
+        document.getElementById('city').value = '';
+        document.getElementById('venue').value = '';
+        document.getElementById('startDate').value = '';
+        document.getElementById('endDate').value = '';
+        document.getElementById('description').value = '';
+        document.getElementById('publish').checked = false;
+        fetchEvents();
+      }
+    });
+  </script>
+</body>
+</html>
