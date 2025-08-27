@@ -1,140 +1,142 @@
-<!DOCTYPE html>
-<html class="dark">
+<!doctype html>
+<html lang="en" class="dark">
 <head>
-  <meta charset="utf-8">
-  <title>Admin Dashboard - RAF Signature Events</title>
-  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@3.3.0/dist/tailwind.min.css" rel="stylesheet">
-  <script src="https://unpkg.com/@supabase/supabase-js@2.39.3/dist/supabase.js"></script>
-</head>
-<body class="bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-100">
-  <nav class="flex justify-between items-center p-4">
-    <h1 class="text-2xl font-bold">Admin Dashboard</h1>
-    <button id="toggleTheme" class="px-4 py-2 bg-gray-200 dark:bg-gray-700 rounded">Toggle Theme</button>
-  </nav>
-  <!-- Authentication container -->
-  <div id="auth" class="p-8 max-w-md mx-auto">
-    <h2 class="text-xl font-bold mb-4">Login</h2>
-    <input id="loginEmail" type="email" placeholder="Email" class="w-full mb-2 p-2 border rounded">
-    <input id="loginPassword" type="password" placeholder="Password" class="w-full mb-4 p-2 border rounded">
-    <button id="loginBtn" class="w-full px-4 py-2 bg-blue-600 text-white rounded">Login</button>
-    <p id="loginError" class="text-red-500 mt-2"></p>
-  </div>
-  <!-- Dashboard container -->
-  <div id="dashboard" class="hidden p-8">
-    <h2 class="text-xl font-bold mb-4">Create Event</h2>
-    <input id="title" type="text" placeholder="Title" class="w-full mb-2 p-2 border rounded">
-    <input id="city" type="text" placeholder="City" class="w-full mb-2 p-2 border rounded">
-    <input id="venue" type="text" placeholder="Venue" class="w-full mb-2 p-2 border rounded">
-    <input id="startDate" type="date" class="w-full mb-2 p-2 border rounded">
-    <input id="endDate" type="date" class="w-full mb-2 p-2 border rounded">
-    <textarea id="description" placeholder="Description" class="w-full mb-2 p-2 border rounded"></textarea>
-    <label class="block mb-4">
-      <input id="publish" type="checkbox" class="mr-2"> Publish
-    </label>
-    <button id="createEventBtn" class="w-full px-4 py-2 bg-green-600 text-white rounded">Create Event</button>
-    <p id="eventError" class="text-red-500 mt-2"></p>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>RAF Admin</title>
 
-    <h2 class="text-xl font-bold mt-8 mb-4">Existing Events</h2>
-    <div id="eventsTable" class="space-y-2"></div>
-  </div>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
   <script>
-    const supabaseUrl = 'https://pojudmrkqruuxklwvkvj.supabase.co';
-    const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBvanVkbXJrcXJ1dXhrbHd2a3ZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYxMTE3ODgsImV4cCI6MjA3MTY4Nzc4OH0.dAwlj7yQm1eMz4weKroUC2t5Y_1N5koEHSpqqoH65G0';
-    const supabase = supabase.createClient(supabaseUrl, supabaseAnonKey);
-
-    // Theme toggle
-    const toggleButton = document.getElementById('toggleTheme');
-    toggleButton.addEventListener('click', () => {
-      document.documentElement.classList.toggle('dark');
-    });
-
-    // Authentication logic
-    const authDiv = document.getElementById('auth');
-    const dashboardDiv = document.getElementById('dashboard');
-    const loginEmail = document.getElementById('loginEmail');
-    const loginPassword = document.getElementById('loginPassword');
-    const loginBtn = document.getElementById('loginBtn');
-    const loginError = document.getElementById('loginError');
-
-    loginBtn.addEventListener('click', async () => {
-      loginError.textContent = '';
-      const email = loginEmail.value;
-      const password = loginPassword.value;
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) {
-        loginError.textContent = error.message;
-      } else {
-        authDiv.classList.add('hidden');
-        dashboardDiv.classList.remove('hidden');
-        fetchEvents();
-      }
-    });
-
-    // Fetch all events (published and drafts)
-    async function fetchEvents() {
-      const { data, error } = await supabase
-        .from('events')
-        .select('*')
-        .order('created_at', { ascending: false });
-      if (error) {
-        console.error('Error fetching events:', error);
-        return;
-      }
-      const container = document.getElementById('eventsTable');
-      container.innerHTML = '';
-      data.forEach(event => {
-        const card = document.createElement('div');
-        card.className = 'bg-white dark:bg-gray-800 shadow rounded p-4';
-        card.innerHTML = `
-          <h3 class="text-lg font-bold mb-1">${event.title}</h3>
-          <p class="text-sm mb-1">${event.city || ''} ${event.city && event.venue ? '–' : ''} ${event.venue || ''}</p>
-          <p class="text-sm mb-1">${event.start_date ? new Date(event.start_date).toLocaleDateString() : ''}</p>
-          <p class="text-sm mb-1">${event.is_published ? 'Published' : 'Draft'}</p>
-        `;
-        container.appendChild(card);
-      });
-    }
-
-    // Create event logic
-    const createEventBtn = document.getElementById('createEventBtn');
-    const eventError = document.getElementById('eventError');
-    createEventBtn.addEventListener('click', async () => {
-      eventError.textContent = '';
-      const title = document.getElementById('title').value;
-      const city = document.getElementById('city').value;
-      const venue = document.getElementById('venue').value;
-      const startDate = document.getElementById('startDate').value;
-      const endDate = document.getElementById('endDate').value;
-      const description = document.getElementById('description').value;
-      const publish = document.getElementById('publish').checked;
-      const slug = title.toLowerCase().trim().replace(/\s+/g, '-');
-      const { error } = await supabase
-        .from('events')
-        .insert([
-          {
-            slug,
-            title,
-            city,
-            venue,
-            start_date: startDate ? startDate : null,
-            end_date: endDate ? endDate : null,
-            description,
-            is_published: publish
-          }
-        ]);
-      if (error) {
-        eventError.textContent = error.message;
-      } else {
-        document.getElementById('title').value = '';
-        document.getElementById('city').value = '';
-        document.getElementById('venue').value = '';
-        document.getElementById('startDate').value = '';
-        document.getElementById('endDate').value = '';
-        document.getElementById('description').value = '';
-        document.getElementById('publish').checked = false;
-        fetchEvents();
-      }
-    });
+    tailwind.config = { darkMode:'class', theme:{ extend:{ colors:{ navy:{950:'#0B132B',900:'#0E1A3A'} }, boxShadow:{card:'0 12px 30px rgba(0,0,0,.08)'}, borderRadius:{'3xl':'1.5rem'} } } }
   </script>
-</body>
-</html>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+  <style>
+    body{font-family:Inter,system-ui}
+    .wordmark{font-family:"Playfair Display",serif}
+    .card{box-shadow:0 12px 30px rgba(0,0,0,.08)}
+    .toast{position:fixed;right:1rem;bottom:1rem;background:#10b981;color:#062; padding:.6rem .8rem;border-radius:.75rem}
+  </style>
+</head>
+<body class="bg-[var(--cream,#FFF7ED)] dark:bg-navy-950 text-slate-900 dark:text-slate-100">
+  <div class="max-w-6xl mx-auto px-4 py-6">
+    <div class="flex items-center justify-between mb-6">
+      <div class="flex items-center gap-3">
+        <img src="/logo.png" class="h-10 w-10 rounded-full ring-2 ring-amber-300" onerror="this.style.display='none'"/>
+        <h1 class="text-2xl font-semibold wordmark">RAF Admin</h1>
+      </div>
+      <button id="logout" class="hidden px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-300 to-rose-400 text-slate-900">Logout</button>
+    </div>
+
+    <!-- Login -->
+    <div id="loginBox" class="max-w-md card rounded-3xl ring-1 ring-amber-200/70 dark:ring-white/10 p-5">
+      <h2 class="font-semibold mb-2">Sign in</h2>
+      <div class="space-y-3">
+        <div>
+          <label class="text-sm">Email</label>
+          <input id="lemail" class="mt-1 w-full px-3 py-2 rounded-xl border border-amber-300/60 dark:border-white/15 bg-white/80 dark:bg-slate-800/60" placeholder="you@domain.com" />
+        </div>
+        <div>
+          <label class="text-sm">Password</label>
+          <input id="lpass" type="password" class="mt-1 w-full px-3 py-2 rounded-xl border border-amber-300/60 dark:border-white/15 bg-white/80 dark:bg-slate-800/60" placeholder="••••••••" />
+        </div>
+        <button id="signin" class="w-full px-3 py-2 rounded-xl bg-gradient-to-r from-amber-300 to-rose-400 text-slate-900">Sign in</button>
+        <p class="text-xs opacity-70">Use the user you created in Supabase Auth.</p>
+      </div>
+    </div>
+
+    <!-- Dashboard -->
+    <div id="dash" class="hidden">
+      <div class="grid md:grid-cols-5 gap-6 mt-6">
+        <!-- List -->
+        <div class="md:col-span-3">
+          <div class="flex items-center justify-between mb-3">
+            <h2 class="text-xl font-semibold">Events</h2>
+            <button id="newEvent" class="px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-300 to-rose-400 text-slate-900">New Event</button>
+          </div>
+          <div id="eventsList" class="space-y-3"></div>
+        </div>
+
+        <!-- Editor -->
+        <div class="md:col-span-2 card rounded-3xl ring-1 ring-amber-200/70 dark:ring-white/10 p-4">
+          <h3 id="formTitle" class="font-semibold mb-2 wordmark">New Event</h3>
+          <div class="grid grid-cols-2 gap-3">
+            <div><label class="text-sm">Title</label><input id="title" class="mt-1 w-full px-3 py-2 rounded-xl border border-amber-300/60 dark:border-white/15 bg-white/80 dark:bg-slate-800/60"/></div>
+            <div><label class="text-sm">City</label><input id="city" class="mt-1 w-full px-3 py-2 rounded-xl border border-amber-300/60 dark:border-white/15 bg-white/80 dark:bg-slate-800/60"/></div>
+            <div><label class="text-sm">Venue</label><input id="venue" class="mt-1 w-full px-3 py-2 rounded-xl border border-amber-300/60 dark:border-white/15 bg-white/80 dark:bg-slate-800/60"/></div>
+            <div><label class="text-sm">Start date</label><input type="date" id="start" class="mt-1 w-full px-3 py-2 rounded-xl border border-amber-300/60 dark:border-white/15 bg-white/80 dark:bg-slate-800/60"/></div>
+            <div><label class="text-sm">End date</label><input type="date" id="end" class="mt-1 w-full px-3 py-2 rounded-xl border border-amber-300/60 dark:border-white/15 bg-white/80 dark:bg-slate-800/60"/></div>
+            <div><label class="text-sm">Published?</label>
+              <select id="published" class="mt-1 w-full px-3 py-2 rounded-xl border border-amber-300/60 dark:border-white/15 bg-white/80 dark:bg-slate-800/60">
+                <option value="true">Yes</option><option value="false">No</option>
+              </select>
+            </div>
+          </div>
+          <div class="mt-3">
+            <label class="text-sm">Description</label>
+            <textarea id="desc" rows="3" class="mt-1 w-full px-3 py-2 rounded-xl border border-amber-300/60 dark:border-white/15 bg-white/80 dark:bg-slate-800/60"></textarea>
+          </div>
+          <div class="mt-3">
+            <label class="text-sm">Cover image (optional)</label>
+            <input id="cover" type="file" accept="image/*" class="mt-1 block w-full text-sm"/>
+            <img id="coverPreview" class="mt-2 hidden w-full h-28 object-cover rounded-xl ring-1 ring-amber-200/60 dark:ring-white/10"/>
+          </div>
+          <div class="mt-4 flex gap-2">
+            <button id="save" class="px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-300 to-rose-400 text-slate-900">Save Event</button>
+            <button id="clear" class="px-3 py-1.5 rounded-xl border border-amber-300/60 dark:border-white/15">Clear</button>
+          </div>
+          <p class="text-xs opacity-70 mt-2">Slug auto-generated from Title + City + Date.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast hidden">Saved ✅</div>
+
+  <script>
+    // Theme memory
+    document.documentElement.classList.toggle('dark', (localStorage.getItem('raf-theme')||'dark')==='dark');
+
+    // Supabase
+    const SUPABASE_URL  = "https://pojudmrkqruuxklwvkvj.supabase.co";
+    const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBvanVkbXJrcXJ1dXhrbHd2a3ZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYxMTE3ODgsImV4cCI6MjA3MTY4Nzc4OH0.dAwlj7yQm1eMz4weKroUC2t5Y_1N5koEHSpqqoH65G0";
+    const client = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+
+    // Elements
+    const loginBox = document.getElementById('loginBox');
+    const dash = document.getElementById('dash');
+    const logoutBtn = document.getElementById('logout');
+    const eventsList = document.getElementById('eventsList');
+    const toast = document.getElementById('toast');
+
+    // Toast
+    const showToast = (msg='Saved ✅') => { toast.textContent=msg; toast.classList.remove('hidden'); setTimeout(()=>toast.classList.add('hidden'),1800); };
+
+    // Auth
+    async function initSession(){
+      const { data } = await client.auth.getSession();
+      if(data?.session){ onLogin(); } else { onLogout(); }
+      client.auth.onAuthStateChange((_e, session)=> session ? onLogin() : onLogout());
+    }
+    function onLogin(){ loginBox.classList.add('hidden'); dash.classList.remove('hidden'); logoutBtn.classList.remove('hidden'); loadEvents(); }
+    function onLogout(){ loginBox.classList.remove('hidden'); dash.classList.add('hidden'); logoutBtn.classList.add('hidden'); }
+    document.getElementById('signin').onclick = async ()=>{
+      const email = document.getElementById('lemail').value.trim();
+      const password = document.getElementById('lpass').value.trim();
+      const { error } = await client.auth.signInWithPassword({ email, password });
+      if(error) alert(error.message);
+    };
+    logoutBtn.onclick = async ()=> { await client.auth.signOut(); };
+
+    // Utils
+    const slugify = s => s.toLowerCase().trim().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)+/g,'');
+    document.getElementById('cover').addEventListener('change', e=>{
+      const f = e.target.files[0]; const p = document.getElementById('coverPreview');
+      if(f){ p.src = URL.createObjectURL(f); p.classList.remove('hidden'); } else { p.classList.add('hidden'); }
+    });
+
+    // List events
+    async function loadEvents(){
+      const { data, error } = await client.from('events').select('*').order('start_date',{ascending:true});
+      eventsList.innerHTML = '';
+      if(error){ eventsList.innerHTML = `<p class="text-sm opacity-80">Error loading events.</p>`; return;
