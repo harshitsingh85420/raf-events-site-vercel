@@ -1,97 +1,178 @@
-<!DOCTYPE html>
-<html class="dark">
+<!doctype html>
+<html lang="en" class="dark">
 <head>
-  <meta charset="utf-8">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>RAF Signature Events</title>
-  <!-- Tailwind CSS via CDN for styling -->
-  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@3.3.0/dist/tailwind.min.css" rel="stylesheet">
-  <!-- Supabase client -->
-  <script src="https://unpkg.com/@supabase/supabase-js@2.39.3/dist/supabase.js"></script>
-</head>
-<body class="bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-100">
-  <nav class="flex justify-between items-center p-4">
-    <img src="logo.png" alt="Logo" class="h-10">
-    <button id="toggleTheme" class="px-4 py-2 bg-gray-200 dark:bg-gray-700 rounded">Toggle Theme</button>
-  </nav>
-  <section id="hero" class="p-8 text-center">
-    <h1 class="text-4xl font-bold mb-4">Welcome to RAF Signature Events</h1>
-    <p class="mb-6">Experience the glamour of celebrity masterclasses and more.</p>
-    <a href="#events" class="px-6 py-3 bg-blue-600 text-white rounded">View Events</a>
-  </section>
-  <section id="events" class="p-8">
-    <h2 class="text-3xl font-bold mb-4">Upcoming Events</h2>
-    <div id="eventsList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-      <!-- events will be inserted here -->
-    </div>
-  </section>
-  <section id="gallery" class="p-8">
-    <h2 class="text-3xl font-bold mb-4">Gallery</h2>
-    <div id="galleryList" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
-      <!-- gallery images will be inserted here -->
-    </div>
-  </section>
+
+  <!-- SEO & Social -->
+  <meta name="description" content="Luxe makeup masterclasses & events. Learn red-carpet techniques from industry pros." />
+  <meta name="theme-color" content="#FFF7ED" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#0B132B" media="(prefers-color-scheme: dark)">
+  <meta property="og:title" content="RAF Signature Events">
+  <meta property="og:description" content="Luxe makeup masterclasses & events.">
+  <meta property="og:image" content="/logo.png">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <link rel="icon" href="/favicon.ico">
+
+  <!-- Fonts & Tailwind -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
   <script>
-    // Replace these with your Supabase project URL and anon key
-    const supabaseUrl = 'https://pojudmrkqruuxklwvkvj.supabase.co';
-    const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBvanVkbXJrcXJ1dXhrbHd2a3ZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYxMTE3ODgsImV4cCI6MjA3MTY4Nzc4OH0.dAwlj7yQm1eMz4weKroUC2t5Y_1N5koEHSpqqoH65G0';
-    const supabase = supabase.createClient(supabaseUrl, supabaseAnonKey);
-
-    // Theme toggle
-    const toggleButton = document.getElementById('toggleTheme');
-    toggleButton.addEventListener('click', () => {
-      document.documentElement.classList.toggle('dark');
-    });
-
-    // Fetch published events and render them
-    async function fetchEvents() {
-      const { data, error } = await supabase
-        .from('events')
-        .select('*')
-        .eq('is_published', true)
-        .order('start_date', { ascending: true });
-      if (error) {
-        console.error('Error fetching events:', error);
-        return;
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: { navy: {950:'#0B132B',900:'#0E1A3A'} },
+          boxShadow: { card: '0 12px 30px rgba(0,0,0,.08)'},
+          borderRadius: { '3xl':'1.5rem' }
+        }
       }
-      const container = document.getElementById('eventsList');
-      container.innerHTML = '';
-      data.forEach(event => {
-        const card = document.createElement('div');
-        card.className = 'bg-white dark:bg-gray-800 shadow rounded p-4';
-        card.innerHTML = `
-          <h3 class="text-xl font-bold mb-2">${event.title}</h3>
-          <p class="mb-2">${event.city || ''} ${event.city && event.venue ? '–' : ''} ${event.venue || ''}</p>
-          <p class="mb-4">${event.start_date ? new Date(event.start_date).toLocaleDateString() : ''}</p>
-          <a href="#" class="text-blue-600 hover:underline">Register</a>
-        `;
-        container.appendChild(card);
+    }
+  </script>
+  <!-- Supabase JS (UMD) -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+
+  <style>
+    :root{ --cream:#FFF7ED }
+    html,body{ font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial }
+    .card{ box-shadow:0 12px 30px rgba(0,0,0,.08) }
+    .wordmark{ font-family:"Playfair Display",serif }
+    .fade-in{ animation:fade .2s ease-in both } @keyframes fade{from{opacity:.0;transform:translateY(4px)}to{opacity:1;transform:none}}
+    .skeleton{ background:linear-gradient(90deg, rgba(0,0,0,.04), rgba(0,0,0,.08), rgba(0,0,0,.04)); background-size:200% 100%; animation:sk 1.2s linear infinite }
+    @keyframes sk{0%{background-position:0 0}100%{background-position:200% 0}}
+  </style>
+</head>
+<body class="bg-[var(--cream)] dark:bg-navy-950 text-slate-900 dark:text-slate-100">
+  <!-- Header -->
+  <header class="sticky top-0 z-30 backdrop-blur bg-white/60 dark:bg-slate-800/40 border-b border-amber-200/60 dark:border-white/10">
+    <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
+      <a href="/" class="flex items-center gap-3">
+        <img src="/logo.png" alt="" class="h-10 w-10 rounded-full ring-2 ring-amber-300 object-cover" onerror="this.style.display='none';this.nextElementSibling.style.display='block'">
+        <div class="hidden sm:block wordmark text-lg font-bold">RAF Signature Events</div>
+      </a>
+      <div class="flex items-center gap-3">
+        <a href="admin.html" class="text-sm underline decoration-amber-400 underline-offset-4">Admin</a>
+        <button id="toggleTheme" aria-label="Toggle theme" class="px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-300 to-rose-400 text-slate-900">Toggle</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Hero -->
+  <section class="max-w-6xl mx-auto px-4 pt-10 pb-8 grid md:grid-cols-2 gap-8 items-center">
+    <div>
+      <h1 class="wordmark text-4xl md:text-5xl font-bold tracking-tight">Luxe Makeup Masterclasses & Events</h1>
+      <p class="mt-4 opacity-80">Red-carpet techniques. Hands-on practice. Limited seats.</p>
+      <div class="mt-6 flex gap-3">
+        <a href="#upcoming" class="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-300 to-rose-400 text-slate-900">See Upcoming</a>
+        <a href="#gallery" class="px-4 py-2 rounded-xl border border-amber-300/70 dark:border-white/15 hover:bg-amber-100/70 dark:hover:bg-slate-800/60">Gallery</a>
+      </div>
+    </div>
+    <div class="relative rounded-3xl overflow-hidden ring-1 ring-amber-200/70 dark:ring-white/10 card">
+      <img src="https://images.unsplash.com/photo-1512496015851-a90fb38ba796?q=80&w=1600&auto=format&fit=crop" alt="Hero" class="w-full h-full object-cover">
+      <div class="absolute inset-0 bg-gradient-to-t from-navy-950/50 to-transparent"></div>
+    </div>
+  </section>
+
+  <!-- Upcoming -->
+  <section id="upcoming" class="max-w-6xl mx-auto px-4 py-8 border-t border-amber-200/60 dark:border-white/10">
+    <div class="flex items-end justify-between mb-4">
+      <h2 class="text-2xl md:text-3xl font-semibold">Upcoming Events</h2>
+      <span id="countUpcoming" class="text-sm opacity-70"></span>
+    </div>
+    <div id="eventsGrid" class="grid md:grid-cols-2 gap-6">
+      <!-- Skeletons -->
+      <div class="rounded-3xl ring-1 ring-amber-200/60 dark:ring-white/10 overflow-hidden skeleton h-64"></div>
+      <div class="rounded-3xl ring-1 ring-amber-200/60 dark:ring-white/10 overflow-hidden skeleton h-64"></div>
+    </div>
+    <div id="noEvents" class="hidden text-sm opacity-70 mt-2">No upcoming events yet — follow us on Instagram for announcements.</div>
+  </section>
+
+  <!-- Gallery -->
+  <section id="gallery" class="max-w-6xl mx-auto px-4 py-8 border-t border-amber-200/60 dark:border-white/10">
+    <h2 class="text-2xl md:text-3xl font-semibold mb-4">Gallery</h2>
+    <div id="galleryMasonry" class="columns-1 sm:columns-2 md:columns-3 gap-4 [column-fill:_balance]">
+      <!-- skeletons -->
+      <div class="h-40 rounded-3xl ring-1 ring-amber-200/60 dark:ring-white/10 skeleton mb-4"></div>
+      <div class="h-56 rounded-3xl ring-1 ring-amber-200/60 dark:ring-white/10 skeleton mb-4"></div>
+      <div class="h-72 rounded-3xl ring-1 ring-amber-200/60 dark:ring-white/10 skeleton mb-4"></div>
+    </div>
+    <div id="noGallery" class="hidden text-sm opacity-70 mt-2">No images yet.</div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="border-t border-amber-200/60 dark:border-white/10 py-8 mt-8">
+    <div class="max-w-6xl mx-auto px-4 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <img src="/logo.png" class="h-8 w-8 rounded-full ring-1 ring-amber-300" alt="" onerror="this.style.display='none'">
+        <p class="text-sm opacity-80">© <span id="year"></span> RAF Signature Events</p>
+      </div>
+      <a target="_blank" href="https://instagram.com/rafsignatureevents" class="text-sm underline decoration-amber-400 underline-offset-4">Instagram</a>
+    </div>
+  </footer>
+
+  <script>
+    // Theme
+    const htmlEl = document.documentElement;
+    const saved = localStorage.getItem('raf-theme') || 'dark';
+    htmlEl.classList.toggle('dark', saved === 'dark');
+    document.getElementById('toggleTheme').onclick = () => {
+      const next = htmlEl.classList.contains('dark') ? 'light' : 'dark';
+      htmlEl.classList.toggle('dark', next === 'dark');
+      localStorage.setItem('raf-theme', next);
+    };
+    document.getElementById('year').textContent = new Date().getFullYear();
+
+    // Supabase
+    const SUPABASE_URL  = "https://pojudmrkqruuxklwvkvj.supabase.co";
+    const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBvanVkbXJrcXJ1dXhrbHd2a3ZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYxMTE3ODgsImV4cCI6MjA3MTY4Nzc4OH0.dAwlj7yQm1eMz4weKroUC2t5Y_1N5koEHSpqqoH65G0";
+    const client = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+
+    // Events
+    async function loadEvents(){
+      const wrap = document.getElementById('eventsGrid');
+      const { data, error } = await client.from('events').select('*').eq('is_published', true).order('start_date', { ascending:true });
+      wrap.innerHTML = '';
+      if(error || !data || !data.length){ document.getElementById('noEvents').classList.remove('hidden'); document.getElementById('countUpcoming').textContent=''; return; }
+      document.getElementById('countUpcoming').textContent = `${data.length} event${data.length>1?'s':''}`;
+      data.forEach(e=>{
+        const d = document.createElement('div');
+        d.className = "card ring-1 ring-amber-200/70 dark:ring-white/10 rounded-3xl overflow-hidden fade-in";
+        d.innerHTML = `
+          <div class="relative aspect-[16/9] bg-amber-50 dark:bg-slate-800">
+            ${e.cover_url ? `<img src="${e.cover_url}" class="absolute inset-0 w-full h-full object-cover" loading="lazy" decoding="async" alt="">` : ''}
+            <div class="absolute inset-0 bg-gradient-to-t from-navy-950/70 to-transparent"></div>
+            <span class="absolute top-3 right-3 text-xs px-2 py-1 rounded-full bg-amber-300 text-slate-900">${e.start_date ?? ''}</span>
+          </div>
+          <div class="p-5">
+            <div class="flex items-center justify-between">
+              <h3 class="text-xl font-semibold wordmark">${e.title}</h3>
+              <span class="text-xs opacity-80">${e.city ?? ''} • ${e.venue ?? ''}</span>
+            </div>
+            ${e.description ? `<p class="mt-2 text-sm opacity-90">${e.description}</p>` : ``}
+            <div class="mt-4"><a href="#" class="inline-flex items-center px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-300 to-rose-400 text-slate-900">Get Tickets</a></div>
+          </div>`;
+        wrap.appendChild(d);
       });
     }
 
-    // Fetch gallery images and render them
-    async function fetchGallery() {
-      const { data, error } = await supabase
-        .from('gallery')
-        .select('*')
-        .order('created_at', { ascending: false });
-      if (error) {
-        console.error('Error fetching gallery:', error);
-        return;
-      }
-      const container = document.getElementById('galleryList');
-      container.innerHTML = '';
-      data.forEach(item => {
+    // Gallery
+    async function loadGallery(){
+      const wrap = document.getElementById('galleryMasonry');
+      const { data, error } = await client.from('gallery').select('*').order('created_at', { ascending:false }).limit(30);
+      wrap.innerHTML = '';
+      if(error || !data || !data.length){ document.getElementById('noGallery').classList.remove('hidden'); return; }
+      data.forEach(g=>{
         const img = document.createElement('img');
-        img.className = 'w-full h-40 object-cover rounded';
-        img.src = item.image_url;
-        img.alt = item.caption || '';
-        container.appendChild(img);
+        img.src = g.image_url; img.alt = g.caption||'';
+        img.loading = 'lazy'; img.decoding='async';
+        img.className = "mb-4 w-full rounded-3xl break-inside-avoid ring-1 ring-amber-200/60 dark:ring-white/10";
+        img.title = g.caption || '';
+        wrap.appendChild(img);
       });
     }
 
-    // Initialize page data
-    fetchEvents();
-    fetchGallery();
+    loadEvents(); loadGallery();
   </script>
 </body>
 </html>
