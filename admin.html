@@ -139,4 +139,66 @@
     async function loadEvents(){
       const { data, error } = await client.from('events').select('*').order('start_date',{ascending:true});
       eventsList.innerHTML = '';
-      if(error){ eventsList.innerHTML = `<p class="text-sm opacity-80">Error loading events.</p>`; return;
+      if(error){ eventsList.innerHTML = `<p class="text-sm opacity-80">Error loading events.</p>`; return; }
+      if(!data?.length){ eventsList.innerHTML = `<p class="text-sm opacity-70">No events yet.</p>`; return; }
+      data.forEach(e=>{
+        const row = document.createElement('div');
+        row.className = "card rounded-3xl ring-1 ring-amber-200/70 dark:ring-white/10 p-4 flex gap-3";
+        row.innerHTML = `
+          <div class="w-28 h-16 bg-amber-100/60 dark:bg-slate-800/60 rounded-xl overflow-hidden">
+            ${e.cover_url ? `<img src="${e.cover_url}" class="w-full h-full object-cover">` : ''}
+          </div>
+          <div class="flex-1">
+            <div class="flex items-center justify-between">
+              <p class="font-medium">${e.title}</p>
+              <span class="text-xs px-2 py-1 rounded-full ${e.is_published?'bg-emerald-300':'bg-amber-200/80'} text-slate-900">${e.is_published?'Published':'Draft'}</span>
+            </div>
+            <p class="text-sm opacity-80">${e.city ?? ''} • ${e.venue ?? ''}</p>
+            <p class="text-xs opacity-70">${e.start_date || ''}${e.end_date && e.end_date!==e.start_date ? ` → ${e.end_date}` : ''}</p>
+          </div>`;
+        eventsList.appendChild(row);
+      });
+    }
+
+    async function uploadCoverIfAny(slug){
+      const file = document.getElementById('cover').files[0];
+      if(!file) return '';
+      const path = `covers/${slug}-${Date.now()}-${file.name}`;
+      const up = await client.storage.from('event-covers').upload(path, file, { cacheControl:'3600', upsert:false });
+      if(up.error){ alert(up.error.message); return ''; }
+      const pub = client.storage.from('event-covers').getPublicUrl(path);
+      return pub.data.publicUrl;
+    }
+
+    // Form helpers
+    function clearForm(){
+      ['title','city','venue','start','end','desc'].forEach(id=>document.getElementById(id).value='');
+      document.getElementById('published').value='true';
+      document.getElementById('cover').value=''; document.getElementById('coverPreview').classList.add('hidden');
+      document.getElementById('formTitle').textContent='New Event';
+    }
+    document.getElementById('newEvent').onclick = ()=> clearForm();
+    document.getElementById('clear').onclick = ()=> clearForm();
+
+    document.getElementById('save').onclick = async ()=>{
+      const title = document.getElementById('title').value.trim();
+      if(!title) return alert('Title required');
+      const city = document.getElementById('city').value.trim();
+      const venue = document.getElementById('venue').value.trim();
+      const start = document.getElementById('start').value || null;
+      const end   = document.getElementById('end').value || null;
+      const description = document.getElementById('desc').value.trim();
+      const is_published = document.getElementById('published').value === 'true';
+      const slug = slugify(`${title}-${city}-${start||''}`);
+      const cover_url = await uploadCoverIfAny(slug);
+
+      const payload = { slug, title, city, venue, start_date:start, end_date:end, description, is_published, cover_url, tiers: [] };
+      const { error } = await client.from('events').upsert(payload, { onConflict:'slug' });
+      if(error){ alert(error.message); return; }
+      clearForm(); await loadEvents(); showToast();
+    };
+
+    initSession();
+  </script>
+</body>
+</html>
